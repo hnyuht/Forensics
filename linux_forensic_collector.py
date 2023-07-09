@@ -178,10 +178,19 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
                         with open(item, 'r', encoding='utf-8', errors='replace') as f:
                             output = f.read()
                         zipf.writestr(f'{description}/{os.path.basename(item)}', output)
-except Exception as e:
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(f'Error collecting {item}: {str(e)}\n')
-        continue
+                except Exception as e:
+                    with open(log_file, 'a', encoding='utf-8') as f:
+                        f.write(f'Error collecting {item}: {str(e)}\n')
+                        continue
+
+        else:
+            try:
+                with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                    output = f.read()
+                zipf.writestr(f'{description}/{os.path.basename(path)}', output)
+            except Exception as e:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f'Error collecting {path}: {str(e)}\n')
 
 # Move the log file to the output directory
 shutil.move(log_file, os.path.join(output_dir, 'error_logs.txt'))
@@ -192,7 +201,5 @@ zipf.write(os.path.join(output_dir, 'error_logs.txt'), 'error_logs.txt')
 # Remove the log file from the output directory
 os.remove(os.path.join(output_dir, 'error_logs.txt'))
 
-# Print the path of the generated zip file
-print(f"Artifact collection completed. Zip file created: {zip_filepath}")
 # Print the path of the generated zip file
 print(f"Artifact collection completed. Zip file created: {zip_filepath}")
