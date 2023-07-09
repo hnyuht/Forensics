@@ -45,7 +45,7 @@ zip_filename = f'{hostname}_xdr_linux_triage.zip'
 zip_filepath = os.path.join(output_dir, zip_filename)
 
 # Create a log file for errors
-with open(log_file, 'w') as f:
+with open(log_file, 'w', encoding='utf-8') as f:
     f.write('')
 
 # Collect the artifacts and add them to the zip file
@@ -54,18 +54,20 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
         if isinstance(path, list):
             for file_path in path:
                 try:
-                    output = subprocess.check_output(f'cat "{file_path}"', shell=True, text=True, stderr=subprocess.DEVNULL)
+                    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                        output = f.read()
                     zipf.writestr(f'{artifact}/{os.path.basename(file_path)}', output)
-                except subprocess.CalledProcessError:
-                    with open(log_file, 'a') as f:
-                        f.write(f'Error collecting {file_path}\n')
+                except Exception as e:
+                    with open(log_file, 'a', encoding='utf-8') as f:
+                        f.write(f'Error collecting {file_path}: {str(e)}\n')
         else:
             try:
-                output = subprocess.check_output(f'cat "{path}"', shell=True, text=True, stderr=subprocess.DEVNULL)
+                with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                    output = f.read()
                 zipf.writestr(f'{artifact}/{os.path.basename(path)}', output)
-            except subprocess.CalledProcessError:
-                with open(log_file, 'a') as f:
-                    f.write(f'Error collecting {path}\n')
+            except Exception as e:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f'Error collecting {path}: {str(e)}\n')
 
 # Move the log file to the output directory
 shutil.move(log_file, os.path.join(output_dir, 'error_logs.txt'))
