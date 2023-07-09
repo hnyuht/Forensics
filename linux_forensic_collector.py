@@ -57,41 +57,99 @@ artifacts = {
         'path': '/home/<user>/.viminfo',
         'description': 'Persistence mechanism - Vim history'
     },
-    'Syslogs': {
-        'path': '/var/log/syslog',
-        'description': 'Syslogs'
-    },
-    'Third-party logs': {
-        'path': '/var/log/',
-        'description': 'Third-party logs'
-    },
-    'Log files - /root/.bash_history': {
+    'Root Bash history': {
         'path': '/root/.bash_history',
         'description': 'Root Bash history'
     },
-    'Log files - /var/log/daemon.log': {
+    'Daemon log': {
         'path': '/var/log/daemon.log',
         'description': 'Daemon log'
     },
-    'Log files - /var/log/syslog': {
-        'path': '/var/log/syslog',
-        'description': 'System log'
-    },
-    'Log files - /var/log/btmp': {
+    'Bad login attempts log': {
         'path': '/var/log/btmp',
         'description': 'Bad login attempts log'
     },
-    'Log files - /var/log/wtmp': {
-        'path': '/var/log/wtmp',
-        'description': 'Login information log'
-    },
-    'Log files - /etc/dnsmasq.conf': {
+    'DNSMasq configuration': {
         'path': '/etc/dnsmasq.conf',
         'description': 'DNSMasq configuration'
     },
-    'Log files - /etc/wpa_supplicant/*.conf': {
+    'WPA Supplicant configuration': {
         'path': '/etc/wpa_supplicant/*.conf',
         'description': 'WPA Supplicant configuration'
+    },
+    'Network configurations': {
+        'path': [
+            '/etc/network/interfaces',
+            'ip address show',
+            'netstat -nr',
+            '/etc/resolv.conf'
+        ],
+        'description': 'Network configurations'
+    },
+    'System configuration files': {
+        'path': [
+            '/etc/hosts',
+            '/etc/sysctl.conf',
+            '/etc/ssh/sshd_config'
+        ],
+        'description': 'System configuration files'
+    },
+    'Log files - /var/log/messages': {
+        'path': '/var/log/messages',
+        'description': 'System log'
+    },
+    'Kernel logs': {
+        'path': '/var/log/kern.log',
+        'description': 'Kernel logs'
+    },
+    'Package manager logs': {
+        'path': [
+            '/var/log/dpkg.log',
+            '/var/log/yum.log'
+        ],
+        'description': 'Package manager logs'
+    },
+    'User directories': {
+        'path': '/home/*',
+        'description': 'User directories'
+    },
+    'User configuration files': {
+        'path': [
+            '/home/*/.bashrc',
+            '/home/*/.bash_profile'
+        ],
+        'description': 'User configuration files'
+    },
+    'Web browser artifacts': {
+        'path': [
+            '/home/*/.mozilla/firefox/*.default',
+            '/home/*/.config/google-chrome',
+            '/home/*/.config/chromium'
+        ],
+        'description': 'Web browser artifacts'
+    },
+    'Installed packages': {
+        'path': 'dpkg -l',
+        'description': 'Installed packages'
+    },
+    'Running processes': {
+        'path': 'ps aux',
+        'description': 'Running processes'
+    },
+    'Open ports': {
+        'path': 'netstat -tuln',
+        'description': 'Open ports'
+    },
+    'Loaded kernel modules': {
+        'path': 'lsmod',
+        'description': 'Loaded kernel modules'
+    },
+    'System hardware details': {
+        'path': [
+            'lshw',
+            'lscpu'
+        ],
+        'description': 'System hardware details'
     }
 }
 
@@ -121,9 +179,10 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
         if isinstance(path, list):
             for file_path in path:
                 try:
-                    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-                        output = f.read()
-                    zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
+                    if os.path.isfile(file_path):
+                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                            output = f.read()
+                        zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
                 except Exception as e:
                     with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(f'Error collecting {file_path}: {str(e)}\n')
@@ -140,9 +199,10 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
                     f.write(f'Error collecting {path}: {str(e)}\n')
         else:
             try:
-                with open(path, 'r', encoding='utf-8', errors='replace') as f:
-                    output = f.read()
-                zipf.writestr(f'{description}/{os.path.basename(path)}', output)
+                if os.path.isfile(path):
+                    with open(path, 'r', encoding='utf-8', errors='replace') as f:
+                        output = f.read()
+                    zipf.writestr(f'{description}/{os.path.basename(path)}', output)
             except Exception as e:
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f'Error collecting {path}: {str(e)}\n')
