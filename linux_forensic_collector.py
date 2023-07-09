@@ -10,10 +10,11 @@ def collect_bash_history(destination_dir):
     if os.path.exists(bash_history_path):
         shutil.copy2(bash_history_path, os.path.join(destination_dir, "bash_history"))
 
-
 def collect_network_interfaces(destination_dir):
-    shutil.copy2("/etc/network/interfaces", os.path.join(destination_dir, "network_interfaces"))
-
+    # Use the 'ip' command to retrieve network interface details
+    ip_output = subprocess.check_output(["ip", "link"], universal_newlines=True)
+    with open(os.path.join(destination_dir, "network_interfaces"), "w") as file:
+        file.write(ip_output)
 
 def collect_os_information(destination_dir):
     shutil.copy2("/etc/os-release", os.path.join(destination_dir, "os_release"))
