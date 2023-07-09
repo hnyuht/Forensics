@@ -3,31 +3,96 @@ import shutil
 import zipfile
 import subprocess
 
-# Define the artifacts to collect
+# Define the artifacts to collect with their descriptions
 artifacts = {
-    'OS release information': '/etc/os-release',
-    'User accounts information': '/etc/passwd',
-    'User group information': '/etc/group',
-    'Sudoers list': '/etc/sudoers',
-    'Login information': '/var/log/wtmp',
-    'Authentication logs': '/var/log/auth.log',
-    'Cron jobs': '/etc/crontab',
-    'Services': '/etc/init.d/',
-    'Bash shell startup': [
-        '/home/<user>/.bashrc',
-        '/etc/bash.bashrc',
-        '/etc/profile'
-    ],
-    'Persistence mechanism - Authentication logs': '/var/log/auth.log*',
-    'Persistence mechanism - Bash history': '/home/<user>/.bash_history',
-    'Persistence mechanism - Vim history': '/home/<user>/.viminfo',
-    'Syslogs': '/var/log/syslog',
-    'Third-party logs': '/var/log/',
-    'Hostname': '/etc/hostname',
-    'Timezone information': '/etc/timezone',
-    'Network Interfaces': '/etc/network/interfaces',
-    'DNS information - Hostname resolutions': '/etc/hosts',
-    'DNS information - DNS servers': '/etc/resolv.conf'
+    'OS release information': {
+        'path': '/etc/os-release',
+        'description': 'OS release information'
+    },
+    'User accounts information': {
+        'path': '/etc/passwd',
+        'description': 'User accounts information'
+    },
+    'User group information': {
+        'path': '/etc/group',
+        'description': 'User group information'
+    },
+    'Sudoers list': {
+        'path': '/etc/sudoers',
+        'description': 'Sudoers list'
+    },
+    'Login information': {
+        'path': '/var/log/wtmp',
+        'description': 'Login information'
+    },
+    'Authentication logs': {
+        'path': '/var/log/auth.log',
+        'description': 'Authentication logs'
+    },
+    'Cron jobs': {
+        'path': '/etc/crontab',
+        'description': 'Cron jobs'
+    },
+    'Services': {
+        'path': '/etc/init.d/',
+        'description': 'Registered services'
+    },
+    'Bash shell startup': {
+        'path': [
+            '/home/<user>/.bashrc',
+            '/etc/bash.bashrc',
+            '/etc/profile'
+        ],
+        'description': 'Bash shell startup'
+    },
+    'Persistence mechanism - Authentication logs': {
+        'path': '/var/log/auth.log*',
+        'description': 'Persistence mechanism - Authentication logs'
+    },
+    'Persistence mechanism - Bash history': {
+        'path': '/home/<user>/.bash_history',
+        'description': 'Persistence mechanism - Bash history'
+    },
+    'Persistence mechanism - Vim history': {
+        'path': '/home/<user>/.viminfo',
+        'description': 'Persistence mechanism - Vim history'
+    },
+    'Syslogs': {
+        'path': '/var/log/syslog',
+        'description': 'Syslogs'
+    },
+    'Third-party logs': {
+        'path': '/var/log/',
+        'description': 'Third-party logs'
+    },
+    'Log files - /root/.bash_history': {
+        'path': '/root/.bash_history',
+        'description': 'Root Bash history'
+    },
+    'Log files - /var/log/daemon.log': {
+        'path': '/var/log/daemon.log',
+        'description': 'Daemon log'
+    },
+    'Log files - /var/log/syslog': {
+        'path': '/var/log/syslog',
+        'description': 'System log'
+    },
+    'Log files - /var/log/btmp': {
+        'path': '/var/log/btmp',
+        'description': 'Bad login attempts log'
+    },
+    'Log files - /var/log/wtmp': {
+        'path': '/var/log/wtmp',
+        'description': 'Login information log'
+    },
+    'Log files - /etc/dnsmasq.conf': {
+        'path': '/etc/dnsmasq.conf',
+        'description': 'DNSMasq configuration'
+    },
+    'Log files - /etc/wpa_supplicant/*.conf': {
+        'path': '/etc/wpa_supplicant/*.conf',
+        'description': 'WPA Supplicant configuration'
+    }
 }
 
 # Define the output directory and log file path
@@ -50,21 +115,34 @@ with open(log_file, 'w', encoding='utf-8') as f:
 
 # Collect the artifacts and add them to the zip file
 with zipfile.ZipFile(zip_filepath, 'w') as zipf:
-    for artifact, path in artifacts.items():
+    for artifact, config in artifacts.items():
+        path = config['path']
+        description = config['description']
         if isinstance(path, list):
             for file_path in path:
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                         output = f.read()
-                    zipf.writestr(f'{artifact}/{os.path.basename(file_path)}', output)
+                    zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
                 except Exception as e:
                     with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(f'Error collecting {file_path}: {str(e)}\n')
+        elif '*' in path:
+            try:
+                file_list = subprocess.check_output(f'ls {path}', shell=True, text=True, stderr=subprocess.DEVNULL).split('\n')
+                for file_path in file_list:
+                    if file_path.strip():
+                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                            output = f.read()
+                        zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
+            except Exception as e:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f'Error collecting {path}: {str(e)}\n')
         else:
             try:
                 with open(path, 'r', encoding='utf-8', errors='replace') as f:
                     output = f.read()
-                zipf.writestr(f'{artifact}/{os.path.basename(path)}', output)
+                zipf.writestr(f'{description}/{os.path.basename(path)}', output)
             except Exception as e:
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f'Error collecting {path}: {str(e)}\n')
