@@ -3,51 +3,79 @@ import shutil
 import zipfile
 import socket
 
+
+def collect_bash_history(destination_dir):
+    bash_history_dir = os.path.expanduser("~")
+    bash_history_path = os.path.join(bash_history_dir, ".bash_history")
+    if os.path.exists(bash_history_path):
+        shutil.copy2(bash_history_path, os.path.join(destination_dir, "bash_history"))
+
+
+def collect_network_interfaces(destination_dir):
+    shutil.copy2("/etc/network/interfaces", os.path.join(destination_dir, "network_interfaces"))
+
+
+def collect_os_information(destination_dir):
+    shutil.copy2("/etc/os-release", os.path.join(destination_dir, "os_release"))
+    shutil.copy2("/etc/issue", os.path.join(destination_dir, "issue"))
+
+
+def collect_recent_files(destination_dir):
+    shutil.copytree(os.path.expanduser("~/.local/share/recently-used.xbel"), os.path.join(destination_dir, "recently_used"))
+
+
+def collect_scheduled_tasks(destination_dir):
+    shutil.copytree("/etc/cron.d", os.path.join(destination_dir, "cron_d"))
+    shutil.copytree("/etc/cron.daily", os.path.join(destination_dir, "cron_daily"))
+    shutil.copytree("/etc/cron.hourly", os.path.join(destination_dir, "cron_hourly"))
+    shutil.copytree("/etc/cron.monthly", os.path.join(destination_dir, "cron_monthly"))
+    shutil.copytree("/etc/cron.weekly", os.path.join(destination_dir, "cron_weekly"))
+
+
+def collect_ssh_activity(destination_dir):
+    shutil.copytree("/var/log/auth.log", os.path.join(destination_dir, "auth_log"))
+
+
+def collect_startup_items(destination_dir):
+    shutil.copytree("/etc/init.d", os.path.join(destination_dir, "init_d"))
+    shutil.copytree("/etc/rc.local", os.path.join(destination_dir, "rc_local"))
+
+
+def collect_system_logs(destination_dir):
+    shutil.copytree("/var/log", os.path.join(destination_dir, "var_log"))
+
+
+def collect_trash(destination_dir):
+    shutil.copytree(os.path.expanduser("~/.local/share/Trash"), os.path.join(destination_dir, "trash"))
+
+
+def collect_user_accounts(destination_dir):
+    shutil.copy2("/etc/passwd", os.path.join(destination_dir, "passwd"))
+    shutil.copy2("/etc/group", os.path.join(destination_dir, "group"))
+    shutil.copy2("/etc/shadow", os.path.join(destination_dir, "shadow"))
+
+
 # Get the hostname of the system
 hostname = socket.gethostname()
 
-# Create a directory to store the collected logs and artifacts
-destination_dir = "collected_data"
+# Create a directory to store the collected artifacts
+destination_dir = os.path.join("/tmp/xdr/triage", hostname)
 os.makedirs(destination_dir, exist_ok=True)
 
-# Collect logs from /etc and /var/log, including all subdirectories
-shutil.copytree("/etc", os.path.join(destination_dir, "etc"), dirs_exist_ok=True)
-shutil.copytree("/var/log", os.path.join(destination_dir, "var_log"), dirs_exist_ok=True)
+# Collect Linux artifacts
+collect_bash_history(destination_dir)
+collect_network_interfaces(destination_dir)
+collect_os_information(destination_dir)
+collect_recent_files(destination_dir)
+collect_scheduled_tasks(destination_dir)
+collect_ssh_activity(destination_dir)
+collect_startup_items(destination_dir)
+collect_system_logs(destination_dir)
+collect_trash(destination_dir)
+collect_user_accounts(destination_dir)
 
-# Get a list of all users on the system
-with open("/etc/passwd") as passwd_file:
-    users = [line.split(":")[0] for line in passwd_file.readlines()]
-
-# Collect artifacts from the home directory of each user
-for user in users:
-    home_dir = "/home/" + user
-    if user == "root" and not os.path.exists(home_dir):
-        continue  # Skip root user if /home/root doesn't exist
-    elif user != "root" and not os.path.exists(home_dir):
-        continue  # Skip user if home directory doesn't exist
-    shutil.copytree(home_dir, os.path.join(destination_dir, "home_" + user), dirs_exist_ok=True)
-    # Collect web browser artifacts (Firefox and Chromium)
-    firefox_dir = os.path.join(home_dir, ".mozilla/firefox")
-    if os.path.exists(firefox_dir):
-        shutil.copytree(firefox_dir, os.path.join(destination_dir, "firefox_" + user), dirs_exist_ok=True)
-    chromium_dir = os.path.join(home_dir, ".config/chromium")
-    if os.path.exists(chromium_dir):
-        shutil.copytree(chromium_dir, os.path.join(destination_dir, "chromium" + user), dirs_exist_ok=True)
-    # Collect Nautilus artifacts
-    nautilus_dir = os.path.join(home_dir, ".config/nautilus")
-    if os.path.exists(nautilus_dir):
-        shutil.copytree(nautilus_dir, os.path.join(destination_dir, "nautilus_" + user), dirs_exist_ok=True)
-    # Collect Bash history
-    bash_history_file = os.path.join(home_dir, ".bash_history")
-    if os.path.exists(bash_history_file):
-        shutil.copy2(bash_history_file, os.path.join(destination_dir, "bash_history_" + user))
-    # Collect SSH artifacts
-    ssh_dir = os.path.join(home_dir, ".ssh")
-    if os.path.exists(ssh_dir):
-        shutil.copytree(ssh_dir, os.path.join(destination_dir, "ssh_" + user), dirs_exist_ok=True)
-
-# Compress the collected logs and artifacts into a zip archive
-zip_filename = os.path.join("/tmp/XDR", hostname + ".zip")
+# Compress the collected artifacts into a zip file
+zip_filename = os.path.join("/tmp/xdr/triage", f"{hostname}_triage.zip")
 with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as archive:
     for root, dirs, files in os.walk(destination_dir):
         for file in files:
