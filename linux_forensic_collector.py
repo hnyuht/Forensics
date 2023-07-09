@@ -181,7 +181,7 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
 except Exception as e:
     with open(log_file, 'a', encoding='utf-8') as f:
         f.write(f'Error collecting {item}: {str(e)}\n')
-    continue
+        continue
 
 # Move the log file to the output directory
 shutil.move(log_file, os.path.join(output_dir, 'error_logs.txt'))
