@@ -1,89 +1,100 @@
 import os
-import shutil
 import subprocess
+import shutil
 import zipfile
-import socket
 
+# Define the artifacts to collect
+artifacts = {
+    'generic': [
+        'env',
+        'uptime',
+        'uname -a',
+        'lsmod',
+        '/etc/passwd',
+        '/etc/group',
+        'date',
+        'who',
+        'cpuinfo',
+        'lsof',
+        'sudoers',
+        'mount',
+        'fstab',
+        'last'
+    ],
+    'ssh': [
+        'authorized_keys',
+        'known_hosts'
+    ],
+    'network': [
+        'ip',
+        'netstat',
+        'arp'
+    ],
+    'processus': [
+        'ps'
+    ],
+    'browsers': [
+        'firefox',
+        'google chrome',
+        'chromium'
+    ],
+    'log': [
+        '/var/log/auth.log',
+        '/var/log/syslog'
+    ],
+    'home': [
+        '.gitconfig',
+        '.bash_history',
+        '.zsh_history',
+        '.viminfo'
+    ],
+    'desktop': [
+        '.local/share/Trash'
+    ],
+    'files': [
+        'hashes.md5',
+        'file perm',
+        'timeline'
+    ],
+    'dump': [
+        'avml',
+        'LiME',
+        '/boot/System.map-$(uname -r)',
+        '/boot/vmlinuz'
+    ],
+    'antivirus': [
+        'CLAMAV'
+    ]
+}
 
-def collect_bash_history(destination_dir):
-    bash_history_dir = os.path.expanduser("~")
-    bash_history_path = os.path.join(bash_history_dir, ".bash_history")
-    if os.path.exists(bash_history_path):
-        shutil.copy2(bash_history_path, os.path.join(destination_dir, "bash_history"))
+# Define the output directory and log file path
+output_dir = '/tmp/xdr/traige'
+log_file = os.path.join(output_dir, 'ERRORS.log')
 
-def collect_network_interfaces(destination_dir):
-    # Use the 'ip' command to retrieve network interface details
-    ip_output = subprocess.check_output(["ip", "link"], universal_newlines=True)
-    with open(os.path.join(destination_dir, "network_interfaces"), "w") as file:
-        file.write(ip_output)
+# Create the output directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True)
 
-def collect_os_information(destination_dir):
-    shutil.copy2("/etc/os-release", os.path.join(destination_dir, "os_release"))
-    shutil.copy2("/etc/issue", os.path.join(destination_dir, "issue"))
+# Get the hostname
+hostname = os.uname().nodename
 
+# Create a zip file with the hostname as the filename
+zip_filename = f'{hostname}_linux_xdr_traige.zip'
+zip_filepath = os.path.join(output_dir, zip_filename)
 
-def collect_recent_files(destination_dir):
-    shutil.copytree(os.path.expanduser("~/.local/share/recently-used.xbel"), os.path.join(destination_dir, "recently_used"))
+# Create a log file for errors
+with open(log_file, 'w') as f:
+    f.write('')
 
+# Collect the artifacts and add them to the zip file
+with zipfile.ZipFile(zip_filepath, 'w') as zipf:
+    for category, commands in artifacts.items():
+        for command in commands:
+            try:
+                output = subprocess.check_output(command, shell=True, stderr=subprocess.DEVNULL).decode('utf-8')
+                zipf.writestr(f'{category}/{command}.txt', output)
+            except subprocess.CalledProcessError:
+                with open(log_file, 'a') as f:
+                    f.write(f'Error collecting {command} in {category}\n')
 
-def collect_scheduled_tasks(destination_dir):
-    shutil.copytree("/etc/cron.d", os.path.join(destination_dir, "cron_d"))
-    shutil.copytree("/etc/cron.daily", os.path.join(destination_dir, "cron_daily"))
-    shutil.copytree("/etc/cron.hourly", os.path.join(destination_dir, "cron_hourly"))
-    shutil.copytree("/etc/cron.monthly", os.path.join(destination_dir, "cron_monthly"))
-    shutil.copytree("/etc/cron.weekly", os.path.join(destination_dir, "cron_weekly"))
-
-
-def collect_ssh_activity(destination_dir):
-    shutil.copytree("/var/log/auth.log", os.path.join(destination_dir, "auth_log"))
-
-
-def collect_startup_items(destination_dir):
-    shutil.copytree("/etc/init.d", os.path.join(destination_dir, "init_d"))
-    shutil.copytree("/etc/rc.local", os.path.join(destination_dir, "rc_local"))
-
-
-def collect_system_logs(destination_dir):
-    shutil.copytree("/var/log", os.path.join(destination_dir, "var_log"))
-
-
-def collect_trash(destination_dir):
-    shutil.copytree(os.path.expanduser("~/.local/share/Trash"), os.path.join(destination_dir, "trash"))
-
-
-def collect_user_accounts(destination_dir):
-    shutil.copy2("/etc/passwd", os.path.join(destination_dir, "passwd"))
-    shutil.copy2("/etc/group", os.path.join(destination_dir, "group"))
-    shutil.copy2("/etc/shadow", os.path.join(destination_dir, "shadow"))
-
-
-# Get the hostname of the system
-hostname = socket.gethostname()
-
-# Create a directory to store the collected artifacts
-destination_dir = os.path.join("/tmp/xdr/triage", hostname)
-os.makedirs(destination_dir, exist_ok=True)
-
-# Collect Linux artifacts
-collect_bash_history(destination_dir)
-collect_network_interfaces(destination_dir)
-collect_os_information(destination_dir)
-collect_recent_files(destination_dir)
-collect_scheduled_tasks(destination_dir)
-collect_ssh_activity(destination_dir)
-collect_startup_items(destination_dir)
-collect_system_logs(destination_dir)
-collect_trash(destination_dir)
-collect_user_accounts(destination_dir)
-
-# Compress the collected artifacts into a zip file
-zip_filename = os.path.join("/tmp/xdr/triage", f"{hostname}_triage.zip")
-with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as archive:
-    for root, dirs, files in os.walk(destination_dir):
-        for file in files:
-            file_path = os.path.join(root, file)
-            archive_path = os.path.relpath(file_path, destination_dir)
-            archive.write(file_path, archive_path)
-
-# Clean up the temporary directory
-shutil.rmtree(destination_dir)
+# Copy the log file to the zip file
+shutil.copy(log_file, os.path.join(zip_filepath, 'ERRORS.log'))
