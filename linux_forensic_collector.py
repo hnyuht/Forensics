@@ -23,21 +23,28 @@ for user in users:
     home_dir = "/home/" + user
     if user == "root" and not os.path.exists(home_dir):
         continue  # Skip root user if /home/root doesn't exist
+    elif user != "root" and not os.path.exists(home_dir):
+        continue  # Skip user if home directory doesn't exist
     shutil.copytree(home_dir, os.path.join(destination_dir, "home_" + user), dirs_exist_ok=True)
     # Collect web browser artifacts (Firefox and Chromium)
-    if os.path.exists(os.path.join(home_dir, ".mozilla/firefox")):
-        shutil.copytree(os.path.join(home_dir, ".mozilla/firefox"), os.path.join(destination_dir, "firefox_" + user), dirs_exist_ok=True)
-    if os.path.exists(os.path.join(home_dir, ".config/chromium")):
-        shutil.copytree(os.path.join(home_dir, ".config/chromium"), os.path.join(destination_dir, "chromium" + user), dirs_exist_ok=True)
+    firefox_dir = os.path.join(home_dir, ".mozilla/firefox")
+    if os.path.exists(firefox_dir):
+        shutil.copytree(firefox_dir, os.path.join(destination_dir, "firefox_" + user), dirs_exist_ok=True)
+    chromium_dir = os.path.join(home_dir, ".config/chromium")
+    if os.path.exists(chromium_dir):
+        shutil.copytree(chromium_dir, os.path.join(destination_dir, "chromium" + user), dirs_exist_ok=True)
     # Collect Nautilus artifacts
-    if os.path.exists(os.path.join(home_dir, ".config/nautilus")):
-        shutil.copytree(os.path.join(home_dir, ".config/nautilus"), os.path.join(destination_dir, "nautilus_" + user), dirs_exist_ok=True)
+    nautilus_dir = os.path.join(home_dir, ".config/nautilus")
+    if os.path.exists(nautilus_dir):
+        shutil.copytree(nautilus_dir, os.path.join(destination_dir, "nautilus_" + user), dirs_exist_ok=True)
     # Collect Bash history
-    if os.path.exists(os.path.join(home_dir, ".bash_history")):
-        shutil.copy2(os.path.join(home_dir, ".bash_history"), os.path.join(destination_dir, "bash_history_" + user))
+    bash_history_file = os.path.join(home_dir, ".bash_history")
+    if os.path.exists(bash_history_file):
+        shutil.copy2(bash_history_file, os.path.join(destination_dir, "bash_history_" + user))
     # Collect SSH artifacts
-    if os.path.exists(os.path.join(home_dir, ".ssh")):
-        shutil.copytree(os.path.join(home_dir, ".ssh"), os.path.join(destination_dir, "ssh_" + user), dirs_exist_ok=True)
+    ssh_dir = os.path.join(home_dir, ".ssh")
+    if os.path.exists(ssh_dir):
+        shutil.copytree(ssh_dir, os.path.join(destination_dir, "ssh_" + user), dirs_exist_ok=True)
 
 # Compress the collected logs and artifacts into a zip archive
 zip_filename = os.path.join("/tmp/XDR", hostname + ".zip")
