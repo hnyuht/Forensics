@@ -7,75 +7,63 @@ import subprocess
 artifacts = {
     'OS release information': {
         'path': '/etc/os-release',
-        'description': 'OS release information'
+        'description': 'Details about the operating system installed on the system. It typically includes information such as the name of the operating system, version, and other release-specific details.'
     },
     'User accounts information': {
         'path': '/etc/passwd',
-        'description': 'User accounts information'
+        'description': 'Information about user accounts on the system.'
     },
     'User group information': {
         'path': '/etc/group',
-        'description': 'User group information'
+        'description': 'Information about user groups on the system.'
     },
     'Sudoers list': {
         'path': '/etc/sudoers',
-        'description': 'Sudoers list'
+        'description': 'List of users or groups with sudo (superuser) access.'
     },
     'Login information': {
         'path': '/var/log/wtmp',
-        'description': 'Login information'
+        'description': 'Records of login and logout events.'
     },
     'Authentication logs': {
         'path': '/var/log/auth.log',
-        'description': 'Authentication logs'
+        'description': 'Logs related to authentication events, such as successful and failed login attempts.'
     },
     'Cron jobs': {
         'path': '/etc/crontab',
-        'description': 'Cron jobs'
+        'description': 'Scheduled tasks and cron jobs configured on the system.'
     },
     'Services': {
         'path': '/etc/init.d/',
-        'description': 'Registered services'
+        'description': 'List of registered services and their configurations.'
     },
-    'Bash shell startup': {
-        'path': [
-            '/home/<user>/.bashrc',
-            '/etc/bash.bashrc',
-            '/etc/profile'
-        ],
-        'description': 'Bash shell startup'
-    },
-    'Persistence mechanism - Authentication logs': {
-        'path': '/var/log/auth.log*',
-        'description': 'Persistence mechanism - Authentication logs'
-    },
-    'Persistence mechanism - Bash history': {
+    'Bash history': {
         'path': '/home/<user>/.bash_history',
-        'description': 'Persistence mechanism - Bash history'
+        'description': 'Command history of the Bash shell for each user.'
     },
     'Persistence mechanism - Vim history': {
         'path': '/home/<user>/.viminfo',
-        'description': 'Persistence mechanism - Vim history'
+        'description': 'Command history and settings of the Vim text editor for each user.'
     },
     'Root Bash history': {
         'path': '/root/.bash_history',
-        'description': 'Root Bash history'
+        'description': 'Command history of the Bash shell for the root user.'
     },
     'Daemon log': {
         'path': '/var/log/daemon.log',
-        'description': 'Daemon log'
+        'description': 'Log file containing information about system daemons.'
     },
     'Bad login attempts log': {
         'path': '/var/log/btmp',
-        'description': 'Bad login attempts log'
+        'description': 'Log file recording unsuccessful login attempts.'
     },
     'DNSMasq configuration': {
         'path': '/etc/dnsmasq.conf',
-        'description': 'DNSMasq configuration'
+        'description': 'Configuration file for the DNSMasq DNS forwarder and DHCP server.'
     },
     'WPA Supplicant configuration': {
         'path': '/etc/wpa_supplicant/*.conf',
-        'description': 'WPA Supplicant configuration'
+        'description': 'Configuration files for the WPA Supplicant, which manages wireless connections.'
     },
     'Network configurations': {
         'path': [
@@ -84,7 +72,7 @@ artifacts = {
             'netstat -nr',
             '/etc/resolv.conf'
         ],
-        'description': 'Network configurations'
+        'description': 'Network interface configurations and DNS settings.'
     },
     'System configuration files': {
         'path': [
@@ -92,33 +80,33 @@ artifacts = {
             '/etc/sysctl.conf',
             '/etc/ssh/sshd_config'
         ],
-        'description': 'System configuration files'
+        'description': 'System-wide configuration files for hostname resolution, kernel settings, and SSH server.'
     },
-    'Log files - /var/log/messages': {
-        'path': '/var/log/messages',
-        'description': 'System log'
+    'System log': {
+        'path': '/var/log/syslog',
+        'description': 'General system log containing various system events and messages.'
     },
     'Kernel logs': {
         'path': '/var/log/kern.log',
-        'description': 'Kernel logs'
+        'description': 'Logs related to the Linux kernel and its operations.'
     },
     'Package manager logs': {
         'path': [
             '/var/log/dpkg.log',
             '/var/log/yum.log'
         ],
-        'description': 'Package manager logs'
+        'description': 'Logs of package installation, removal, and updates performed using package managers like dpkg or yum.'
     },
     'User directories': {
         'path': '/home/*',
-        'description': 'User directories'
+        'description': 'Contents of user directories, including user-specific configuration files and data.'
     },
     'User configuration files': {
         'path': [
             '/home/*/.bashrc',
             '/home/*/.bash_profile'
         ],
-        'description': 'User configuration files'
+        'description': 'Configuration files specific to each user, such as Bash shell settings.'
     },
     'Web browser artifacts': {
         'path': [
@@ -126,30 +114,30 @@ artifacts = {
             '/home/*/.config/google-chrome',
             '/home/*/.config/chromium'
         ],
-        'description': 'Web browser artifacts'
+        'description': 'Artifacts related to web browsers, including profiles, settings, and cached data.'
     },
     'Installed packages': {
         'path': 'dpkg -l',
-        'description': 'Installed packages'
+        'description': 'List of installed packages on the system.'
     },
     'Running processes': {
         'path': 'ps aux',
-        'description': 'Running processes'
+        'description': 'List of currently running processes and their details.'
     },
     'Open ports': {
         'path': 'netstat -tuln',
-        'description': 'Open ports'
+        'description': 'Information about open network ports on the system.'
     },
     'Loaded kernel modules': {
         'path': 'lsmod',
-        'description': 'Loaded kernel modules'
+        'description': 'List of kernel modules currently loaded into the system.'
     },
     'System hardware details': {
         'path': [
             'lshw',
             'lscpu'
         ],
-        'description': 'System hardware details'
+        'description': 'Hardware details of the system, including CPU, memory, and other components.'
     }
 }
 
@@ -177,35 +165,32 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
         path = config['path']
         description = config['description']
         if isinstance(path, list):
-            for file_path in path:
+            for item in path:
                 try:
-                    if os.path.isfile(file_path):
-                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    if '*' in item:
+                        file_list = subprocess.check_output(f'ls {item}', shell=True, text=True, stderr=subprocess.DEVNULL).split('\n')
+                        for file_path in file_list:
+                            if file_path.strip():
+                                with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                                    output = f.read()
+                                zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
+                    else:
+                        with open(item, 'r', encoding='utf-8', errors='replace') as f:
                             output = f.read()
-                        zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
+                        zipf.writestr(f'{description}/{os.path.basename(item)}', output)
                 except Exception as e:
-                    with open(log_file, 'a', encoding='utf-8') as f:
-                        f.write(f'Error collecting {file_path}: {str(e)}\n')
-        elif '*' in path:
-            try:
-                file_list = subprocess.check_output(f'ls {path}', shell=True, text=True, stderr=subprocess.DEVNULL).split('\n')
-                for file_path in file_list:
-                    if file_path.strip():
-                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-                            output = f.read()
-                        zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
-            except Exception as e:
-                with open(log_file, 'a', encoding='utf-8') as f:
-                    f.write(f'Error collecting {path}: {str(e)}\n')
-        else:
-            try:
-                if os.path.isfile(path):
-                    with open(path, 'r', encoding='utf-8', errors='replace') as f:
-                        output = f.read()
-                    zipf.writestr(f'{description}/{os.path.basename(path)}', output)
-            except Exception as e:
-                with open(log_file, 'a', encoding='utf-8') as f:
-                    f.write(f'Error collecting {path}: {str(e)}\n')
+    with open(log_file, 'a', encoding='utf-8') as f:
+        f.write(f'Error collecting {item}: {str(e)}\n')
+        continue
 
 # Move the log file to the output directory
 shutil.move(log_file, os.path.join(output_dir, 'error_logs.txt'))
+
+# Add the log file to the zip file
+zipf.write(os.path.join(output_dir, 'error_logs.txt'), 'error_logs.txt')
+
+# Remove the log file from the output directory
+os.remove(os.path.join(output_dir, 'error_logs.txt'))
+
+# Print the path of the generated zip file
+print(f"Artifact collection completed. Zip file created: {zip_filepath}")
