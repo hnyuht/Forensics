@@ -173,11 +173,11 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
                             if file_path.strip():
                                 with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                                     output = f.read()
-                                zipf.writestr(f'{description}/{os.path.basename(file_path)}', output)
+                                zipf.writestr(f'{artifact}/{os.path.basename(file_path)}', output)
                     else:
                         with open(item, 'r', encoding='utf-8', errors='replace') as f:
                             output = f.read()
-                        zipf.writestr(f'{description}/{os.path.basename(item)}', output)
+                        zipf.writestr(f'{artifact}/{os.path.basename(item)}', output)
                 except Exception as e:
                     with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(f'Error collecting {item}: {str(e)}\n')
@@ -185,7 +185,7 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
             try:
                 with open(path, 'r', encoding='utf-8', errors='replace') as f:
                     output = f.read()
-                zipf.writestr(f'{description}/{os.path.basename(path)}', output)
+                zipf.writestr(f'{artifact}/{os.path.basename(path)}', output)
             except Exception as e:
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f'Error collecting {path}: {str(e)}\n')
