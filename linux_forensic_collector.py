@@ -1,84 +1,47 @@
 import os
-import subprocess
 import shutil
 import zipfile
+import subprocess
 
-# Define the artifacts and their commands
+# Define the artifacts to collect
 artifacts = {
-    'generic': [
-        'env',
-        'uptime',
-        'uname -a',
-        'lsmod',
-        '/etc/passwd',
-        '/etc/group',
-        'date',
-        'who',
-        'cpuinfo',
-        'lsof',
-        'sudoers',
-        'mount',
-        'fstab',
-        'last'
+    'OS release information': '/etc/os-release',
+    'User accounts information': '/etc/passwd',
+    'User group information': '/etc/group',
+    'Sudoers list': '/etc/sudoers',
+    'Login information': '/var/log/wtmp',
+    'Authentication logs': '/var/log/auth.log',
+    'Cron jobs': '/etc/crontab',
+    'Services': '/etc/init.d/',
+    'Bash shell startup': [
+        '/home/<user>/.bashrc',
+        '/etc/bash.bashrc',
+        '/etc/profile'
     ],
-    'ssh': [
-        'authorized_keys',
-        'known_hosts'
-    ],
-    'network': [
-        'ip',
-        'netstat',
-        'arp'
-    ],
-    'processus': [
-        'ps'
-    ],
-    'browsers': [
-        'firefox',
-        'google chrome',
-        'chromium'
-    ],
-    'log': [
-        '/var/log/auth.log',
-        '/var/log/syslog'
-    ],
-    'home': [
-        '.gitconfig',
-        '.bash_history',
-        '.zsh_history',
-        '.viminfo'
-    ],
-    'desktop': [
-        '.local/share/Trash'
-    ],
-    'files': [
-        'hashes.md5',
-        'file perm',
-        'timeline'
-    ],
-    'dump': [
-        'avml',
-        'LiME',
-        '/boot/System.map-$(uname -r)',
-        '/boot/vmlinuz'
-    ],
-    'antivirus': [
-        'CLAMAV'
-    ]
+    'Persistence mechanism - Authentication logs': '/var/log/auth.log*',
+    'Persistence mechanism - Bash history': '/home/<user>/.bash_history',
+    'Persistence mechanism - Vim history': '/home/<user>/.viminfo',
+    'Syslogs': '/var/log/syslog',
+    'Third-party logs': '/var/log/',
+    'Hostname': '/etc/hostname',
+    'Timezone information': '/etc/timezone',
+    'Network Interfaces': '/etc/network/interfaces',
+    'DNS information - Hostname resolutions': '/etc/hosts',
+    'DNS information - DNS servers': '/etc/resolv.conf'
 }
 
 # Define the output directory and log file path
-output_dir = '/tmp/xdr/traige'
-log_file = os.path.join(output_dir, 'ERRORS.log')
+output_dir = '/tmp/xdr'
+log_file = os.path.join(output_dir, 'error_logs.txt')
 
 # Create the output directory if it doesn't exist
 os.makedirs(output_dir, exist_ok=True)
 
 # Get the hostname
-hostname = os.uname().nodename
+hostname = subprocess.check_output('hostname', shell=True, text=True).strip()
 
 # Create a zip file with the hostname as the filename
-zip_filename = f'{hostname}_linux_xdr_traige.zip'
+zip_filename = f'{hostname}_xdr_linux_triage.zip'
 zip_filepath = os.path.join(output_dir, zip_filename)
 
 # Create a log file for errors
@@ -87,14 +50,22 @@ with open(log_file, 'w') as f:
 
 # Collect the artifacts and add them to the zip file
 with zipfile.ZipFile(zip_filepath, 'w') as zipf:
-    for category, commands in artifacts.items():
-        for command in commands:
+    for artifact, path in artifacts.items():
+        if isinstance(path, list):
+            for file_path in path:
+                try:
+                    output = subprocess.check_output(f'cat "{file_path}"', shell=True, text=True, stderr=subprocess.DEVNULL)
+                    zipf.writestr(f'{artifact}/{os.path.basename(file_path)}', output)
+                except subprocess.CalledProcessError:
+                    with open(log_file, 'a') as f:
+                        f.write(f'Error collecting {file_path}\n')
+        else:
             try:
-                output = subprocess.check_output(command, shell=True, stderr=subprocess.DEVNULL).decode('utf-8')
-                zipf.writestr(f'{category}/{command}.txt', output)
+                output = subprocess.check_output(f'cat "{path}"', shell=True, text=True, stderr=subprocess.DEVNULL)
+                zipf.writestr(f'{artifact}/{os.path.basename(path)}', output)
             except subprocess.CalledProcessError:
                 with open(log_file, 'a') as f:
-                    f.write(f'Error collecting {command} in {category}\n')
+                    f.write(f'Error collecting {path}\n')
 
-# Copy the log file to the zip file
-shutil.copy(log_file, os.path.join(output_dir, 'ERRORS.log'))
+# Move the log file to the output directory
+shutil.move(log_file, os.path.join(output_dir, 'error_logs.txt'))
