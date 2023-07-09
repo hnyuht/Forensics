@@ -3,7 +3,7 @@ import subprocess
 import shutil
 import zipfile
 
-# Define the artifacts to collect
+# Define the artifacts and their commands
 artifacts = {
     'generic': [
         'env',
@@ -97,4 +97,4 @@ with zipfile.ZipFile(zip_filepath, 'w') as zipf:
                     f.write(f'Error collecting {command} in {category}\n')
 
 # Copy the log file to the zip file
-shutil.copy(log_file, os.path.join(zip_filepath, 'ERRORS.log'))
+shutil.copy(log_file, os.path.join(output_dir, 'ERRORS.log'))
